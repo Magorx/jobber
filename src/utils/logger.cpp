@@ -316,6 +316,10 @@ void Logger::doubt(const char* announcer, const char *message, ...) {
     log_level = prev_log_level;
 }
 
+Logger::Stream Logger::stream(const char* code, const char* announcer) {
+    return Stream(*this, code, announcer);
+}
+
 void Logger::n() {
     fputc('\n', fileptr);
 }
@@ -369,6 +373,30 @@ void Logger::set_offset(int new_offset) {
 
 void Logger::shift_offset(int shift) {
     set_offset(offset + shift);
+}
+
+
+Logger::Stream::Stream(Logger &logger, const char *code, const char *announcer)
+    : logger(logger)
+    , code(code)
+    , announcer(announcer)
+{}
+
+Logger::Stream::Stream(Stream& other)
+    : logger(other.logger)
+    , code(other.code)
+    , announcer(other.announcer)
+    , logged_data(std::move(other.logged_data))
+{
+    other.code = nullptr;
+    other.announcer = nullptr;
+    other.logged_data.clear();
+}
+
+Logger::Stream::~Stream() {
+    if (code == nullptr) return;
+
+    logger.log(code, announcer, logged_data.str().c_str());
 }
 
 

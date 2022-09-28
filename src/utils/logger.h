@@ -7,6 +7,7 @@
 #include <cstdarg>
 
 #include <string>
+#include <sstream>
 #include <vector>
 
 
@@ -51,6 +52,28 @@ class Logger {
     void tick();
 
     void _log(bool to_ignore_log_level, const char* code, const char* announcer, const char *message, va_list arglist);
+
+    class Stream {
+        Logger &logger;
+        const char *code;
+        const char *announcer;
+        std::stringstream logged_data;
+
+    public:
+        Stream(Logger &logger, const char *code, const char *announcer);
+        Stream(Stream&);
+        ~Stream();
+
+        Stream &operator=(const Stream&) = delete;
+        Stream(Stream&&) = delete;
+        Stream &operator=(Stream&&) = delete;
+
+        template<typename T>
+        Stream &operator<<(const T &value) {
+            logged_data << value;
+            return *this;
+        }
+    };
 
 public:
     int paging_mode;
@@ -97,6 +120,15 @@ public:
     void info    (const char* announcer, const char *message, ...);
     void warning (const char* announcer, const char *message, ...);
     void doubt   (const char* announcer, const char *message, ...);
+
+    Stream stream(const char* code="info", const char* announcer="stream");
+
+    template<typename T>
+    Stream operator<<(const T &value) {
+        Stream new_stream(*this, "strm", "logger");
+        new_stream << value;
+        return new_stream;
+    }
 
     void print_n_spaces(int n);
     void n();

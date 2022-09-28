@@ -6,7 +6,7 @@
 int main() {
     Struct s{1, 2};
 
-    kctf::logger.print("a + b = %d\n", s.func());
+    kctf::logger << "I'm ready, think of " << 5 << '\n';
 
     return 0;
 }
