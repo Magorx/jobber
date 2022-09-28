@@ -121,7 +121,7 @@ public:
     void warning (const char* announcer, const char *message, ...);
     void doubt   (const char* announcer, const char *message, ...);
 
-    Stream stream(const char* code="info", const char* announcer="stream");
+    Stream stream(const char* code="strm", const char* announcer="logger");
 
     template<typename T>
     Stream operator<<(const T &value) {
