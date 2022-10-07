@@ -7,7 +7,7 @@
 
 namespace TestApp {
 
-class Task {
+class TaskT {
 public:
     using ResultT = int;
 
@@ -15,10 +15,11 @@ public:
         int add_to_everything;
     };
 
-    size_t complexity() const {
-        return data.size();
-    }
+    struct ComputeContextUpdateT {
+        int add_to_everything;
+    };
 
+public:
     ResultT run() {
         int sum = 0;
         for (const auto &i : data) {
@@ -27,8 +28,12 @@ public:
         return sum;
     }
 
-    std::vector<Task> split(size_t n_tasks) const {
-        std::vector<Task> tasks;
+    size_t complexity() const {
+        return data.size();
+    }
+
+    std::vector<TaskT> split(size_t n_tasks) const {
+        std::vector<TaskT> tasks;
         tasks.resize(n_tasks);
 
         size_t chunk_size = data.size() / n_tasks;
@@ -48,15 +53,22 @@ public:
         return tasks;
     }
 
-    void update_compute_context(size_t new_add_to_everything) {
-        compute_context.add_to_everything = new_add_to_everything;
+    static void update_compute_context(const ComputeContextUpdateT &update) {
+        compute_context.add_to_everything = update.add_to_everything;
+    }
+
+    static ResultT reduce(const std::vector<ResultT> &results) {
+        ResultT sum = 0;
+        for (const auto &i : results) {
+            sum += i;
+        }
+        return sum;
     }
 
 private:
     std::vector<int> data;
 
     static ComputeContextT compute_context;
-
 };
 
 } // namespace TestApp

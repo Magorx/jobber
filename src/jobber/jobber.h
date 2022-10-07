@@ -1,9 +1,6 @@
 #pragma once
 
 
-struct Struct {
-    int a;
-    int b;
-
-    int func();
-};
+#include "task/task.h"
+#include "splitter/collection.h"
+#include "storage/collection.h"
