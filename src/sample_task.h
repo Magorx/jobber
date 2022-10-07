@@ -41,7 +41,7 @@ public:
         }
 
         tasks.push_back({});
-        for (cur_pos; cur_pos < data.size(); ++cur_pos) {
+        for (; cur_pos < data.size(); ++cur_pos) {
             tasks.back().data.push_back(data[cur_pos]);
         }
 

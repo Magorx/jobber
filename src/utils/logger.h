@@ -62,10 +62,10 @@ class Logger {
     public:
         Stream(Logger &logger, const char *code, const char *announcer);
         Stream(Stream&);
+        Stream(Stream&&);
         ~Stream();
 
         Stream &operator=(const Stream&) = delete;
-        Stream(Stream&&) = delete;
         Stream &operator=(Stream&&) = delete;
 
         template<typename T>

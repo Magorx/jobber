@@ -5,6 +5,7 @@
 
 int main() {
     Struct s{1, 2};
+    s.func();
 
     kctf::logger << "I'm ready, think of " << 5 << '\n';
 

@@ -393,6 +393,17 @@ Logger::Stream::Stream(Stream& other)
     other.logged_data.clear();
 }
 
+Logger::Stream::Stream(Stream&& other)
+    : logger(other.logger)
+    , code(other.code)
+    , announcer(other.announcer)
+    , logged_data(std::move(other.logged_data))
+{
+    other.code = nullptr;
+    other.announcer = nullptr;
+    other.logged_data.clear();
+}
+
 Logger::Stream::~Stream() {
     if (code == nullptr) return;
 
