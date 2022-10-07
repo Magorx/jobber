@@ -5,13 +5,24 @@
 
 
 using namespace jobber;
+using TaskT = TestApp::TaskT;
 
 
 int main() {
-    splitter::LinearBisecting<TestApp::TaskT> linear_bisecting(10);
-    storage::Naive<TestApp::TaskT> naive_storage;
+    storage::ComplexityCappedT<TaskT, splitter::LinearGreedy<TaskT>> capped_storage(
+        splitter::LinearGreedy<TaskT>(3)
+    );
 
-    kctf::logger << "I'm ready, think of " << 5 << '\n';
+    TaskT task({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    capped_storage.put({task});
+
+    auto tasks = capped_storage.take(capped_storage.size());
+
+    logger << "tasks: " << tasks.size() << '\n';
+
+    for (const auto &task : tasks) {
+        kctf::logger << task.complexity();
+    }
 
     return 0;
 }

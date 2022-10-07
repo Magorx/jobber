@@ -6,16 +6,19 @@
 #include <concepts>
 #include <vector>
 
-namespace jobber::storage {
+namespace jobber {
 
 template<typename StorageT, typename TaskT>
-concept Concept = requires(
+concept StorageConcept = requires(
     StorageT storage,
     std::vector<TaskT> &&tasks,
     size_t n_tasks
 ) {
-    { storage.insert(tasks) };
+    { storage.put(tasks)    };
     { storage.take(n_tasks) } -> std::convertible_to<std::vector<TaskT>>;
+
+    { storage.size()        } -> std::convertible_to<size_t>;
+    { storage.complexity()  } -> std::convertible_to<ComplexityT>;
 };
 
-} // namespace jobber::storage
+} // namespace jobber

@@ -1,11 +1,15 @@
 #pragma once
 
 
+#include <utils/logger.h>
+
 #include <concepts>
 #include <cstddef>
 #include <vector>
 
 namespace jobber {
+
+using ComplexityT = size_t;
 
 template<typename TaskT>
 concept TaskConcept = requires(
@@ -15,7 +19,7 @@ concept TaskConcept = requires(
     const std::vector<typename TaskT::ResultT> &results
 ) {
     { task.run()             } -> std::convertible_to<typename TaskT::ResultT>;
-    { task.complexity()      } -> std::convertible_to<size_t>;
+    { task.complexity()      } -> std::convertible_to<ComplexityT>;
 
     { task.split(n_tasks)    } -> std::convertible_to<std::vector<TaskT>>;
     { TaskT::reduce(results) } -> std::convertible_to<typename TaskT::ResultT>;

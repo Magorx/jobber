@@ -20,6 +20,11 @@ public:
     };
 
 public:
+    TaskT(std::vector<int> &&data = {})
+        : data(std::move(data))
+    {}
+
+public:
     ResultT run() {
         int sum = 0;
         for (const auto &i : data) {
@@ -45,9 +50,8 @@ public:
             }
         }
 
-        tasks.push_back({});
-        for (; cur_pos < data.size(); ++cur_pos) {
-            tasks.back().data.push_back(data[cur_pos]);
+        if (cur_pos < data.size()) {
+            tasks.push_back(TaskT(std::vector<int>(data.begin() + cur_pos, data.end())));
         }
 
         return tasks;

@@ -6,14 +6,14 @@
 #include <concepts>
 #include <vector>
 
-namespace jobber::splitter {
+namespace jobber {
 
 template<typename SplitterT, typename TaskT>
-concept Concept = requires(
+concept SplitterConcept = requires(
     SplitterT splitter,
     TaskT &&task
 ) {
-    { splitter.split(task) } -> std::convertible_to<std::vector<TaskT>>;
+    { splitter.split(std::move(task)) } -> std::convertible_to<std::vector<TaskT>>;
 };
 
-} // namespace jobber::splitter
+} // namespace jobber
