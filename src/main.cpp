@@ -1,7 +1,7 @@
 #include <jobber/jobber.h>
 #include <utils/logger.h>
 
-#include <utils/event_system/signal.h>
+#include <sample_task.h>
 
 int main() {
     Struct s{1, 2};
