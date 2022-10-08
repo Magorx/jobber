@@ -9,7 +9,7 @@
 namespace jobber::storage {
 
 template <jobber::TaskConcept TaskT>
-class NaiveT {
+class QueueT {
 private:
     std::queue<TaskT> tasks;
 public:

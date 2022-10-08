@@ -3,13 +3,13 @@
 
 #include <jobber/splitter/splitter.h>
 
-#include "naive.h"
+#include "queue.h"
 
 
 namespace jobber::storage {
 
 template <TaskConcept TaskT, SplitterConcept <TaskT> SplitterT>
-class ComplexityCappedT : public NaiveT<TaskT> {
+class ComplexityCappedT : public QueueT<TaskT> {
 private:
     SplitterT splitter;
 public:
@@ -20,12 +20,12 @@ public:
     void put(std::vector<TaskT> &&tasks) {
         for (auto &&task : tasks) {
             auto subtasks = splitter.split(std::move(task));
-            NaiveT<TaskT>::put(std::move(subtasks));
+            QueueT<TaskT>::put(std::move(subtasks));
         }
     }
 
     std::vector<TaskT> take(size_t n_tasks) {
-        return NaiveT<TaskT>::take(n_tasks);
+        return QueueT<TaskT>::take(n_tasks);
     }
 };
 
