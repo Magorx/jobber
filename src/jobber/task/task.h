@@ -18,13 +18,16 @@ concept TaskConcept = requires(
     const typename TaskT::ComputeContextUpdateT &compute_context_update,
     const std::vector<typename TaskT::ResultT> &results
 ) {
-    { task.run()             } -> std::convertible_to<typename TaskT::ResultT>;
-    { task.complexity()      } -> std::convertible_to<ComplexityT>;
+    { task.run()                        } -> std::convertible_to<typename TaskT::ResultT>;
+    { task.complexity()                 } -> std::convertible_to<ComplexityT>;
 
-    { task.split(n_tasks)    } -> std::convertible_to<std::vector<TaskT>>;
-    { TaskT::reduce(results) } -> std::convertible_to<typename TaskT::ResultT>;
+    { task.split(n_tasks)               } -> std::convertible_to<std::vector<TaskT>>;
+    { TaskT::reduce(std::move(results)) } -> std::convertible_to<typename TaskT::ResultT>;
 
     { task.update_compute_context(compute_context_update) };
+
+    { TaskT::empty()                    } -> std::convertible_to<TaskT>;
+    { TaskT::is_empty(task)             } -> std::convertible_to<bool>;
 };
 
 } // namespace jobber

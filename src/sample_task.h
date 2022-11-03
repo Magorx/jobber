@@ -61,7 +61,7 @@ public:
         compute_context.add_to_everything = update.add_to_everything;
     }
 
-    static ResultT reduce(const std::vector<ResultT> &results) {
+    static ResultT reduce(const std::vector<ResultT> &&results) {
         ResultT sum = 0;
         for (const auto &i : results) {
             sum += i;
@@ -69,10 +69,20 @@ public:
         return sum;
     }
 
+    static TaskT empty() {
+        return TaskT();
+    }
+
+    bool is_empty() const {
+        return data.size() == 0;
+    }
+
 private:
     std::vector<int> data;
 
     static ComputeContextT compute_context;
 };
+
+TaskT::ComputeContextT TaskT::compute_context = {0};
 
 } // namespace TestApp

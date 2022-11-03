@@ -78,6 +78,12 @@
         "list": "cpp",
         "locale": "cpp",
         "queue": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "*.ipp": "cpp",
+        "any": "cpp",
+        "codecvt": "cpp",
+        "csignal": "cpp",
+        "coroutine": "cpp",
+        "future": "cpp"
     }
 }

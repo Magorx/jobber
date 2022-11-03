@@ -28,12 +28,7 @@ public:
                 break;
             }
 
-            logger << "splitting task with complexity " << it->complexity() << '\n';
-
             auto new_tasks = it->split(2);
-
-            logger << "new tasks: " << new_tasks.size() << '\n';
-            logger << "new tasks complexity: " << new_tasks[0].complexity() << ' ' << new_tasks[1].complexity() << '\n';
 
             tasks.erase(it);
             tasks.insert(tasks.end(), new_tasks.begin(), new_tasks.end());

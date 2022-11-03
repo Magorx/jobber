@@ -8,7 +8,7 @@
 
 namespace jobber::storage {
 
-template <TaskConcept TaskT, SplitterConcept <TaskT> SplitterT>
+template <TaskConcept TaskT, SplitterConcept<TaskT> SplitterT>
 class ComplexityCappedT : public QueueT<TaskT> {
 private:
     SplitterT splitter;

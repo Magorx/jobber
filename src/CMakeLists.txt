@@ -1,6 +1,8 @@
 aux_source_directory(. JOBBER_TESTAPP_SOURCES)
 aux_source_directory(event_system JOBBER_TESTAPP_SOURCES)
 
+include_directories(extern)
+
 add_subdirectory(utils)
 add_subdirectory(jobber)
 
