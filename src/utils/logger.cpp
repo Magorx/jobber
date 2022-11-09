@@ -248,7 +248,7 @@ void Logger::logr(const char* code, const char* announcer, const char *message, 
 }
 
 void Logger::log(int override_log_level, const char* code, const char* announcer, const char *message, ...) {
-    if (override_log_level < verb_level) return;
+    if (override_log_level > verb_level) return;
 
     va_list args;
     va_start(args, message);
@@ -257,7 +257,7 @@ void Logger::log(int override_log_level, const char* code, const char* announcer
 }
 
 void Logger::logv(int override_log_level, const char* code, const char* announcer, const char *message, va_list args) {
-    if (override_log_level < verb_level) return;
+    if (override_log_level > verb_level) return;
 
     _log(true, code, announcer, message, args);
 }
@@ -322,6 +322,34 @@ void Logger::doubt(const char* announcer, const char *message, ...) {
     log_level = prev_log_level;
 }
 
+void Logger::debug(const char* announcer, const char *message, ...) {
+    int prev_log_level = log_level;
+    set_log_level(Level::debug);
+
+    va_list args;
+    va_start(args, message);
+    _log(false, "debg", announcer, message, args);
+    va_end(args);
+
+    log_level = prev_log_level;
+}
+
+void Logger::trace(const char* announcer, const char *message, ...) {
+    int prev_log_level = log_level;
+    set_log_level(Level::trace);
+
+    va_list args;
+    va_start(args, message);
+    _log(false, "trce", announcer, message, args);
+    va_end(args);
+
+    log_level = prev_log_level;
+}
+
+Logger::Stream Logger::stream(Level log_level, const char* code, const char* announcer) {
+    return Stream(*this, code, announcer, log_level);
+}
+
 Logger::Stream Logger::stream(const char* code, const char* announcer) {
     return Stream(*this, code, announcer);
 }
@@ -382,14 +410,16 @@ void Logger::shift_offset(int shift) {
 }
 
 
-Logger::Stream::Stream(Logger &logger, const char *code, const char *announcer)
+Logger::Stream::Stream(Logger &logger, const char *code, const char *announcer, Level log_level)
     : logger(logger)
+    , log_level(log_level)
     , code(code)
     , announcer(announcer)
 {}
 
 Logger::Stream::Stream(Stream& other)
     : logger(other.logger)
+    , log_level(other.log_level)
     , code(other.code)
     , announcer(other.announcer)
     , logged_data(std::move(other.logged_data))
@@ -401,6 +431,7 @@ Logger::Stream::Stream(Stream& other)
 
 Logger::Stream::Stream(Stream&& other)
     : logger(other.logger)
+    , log_level(other.log_level)
     , code(other.code)
     , announcer(other.announcer)
     , logged_data(std::move(other.logged_data))
@@ -413,7 +444,7 @@ Logger::Stream::Stream(Stream&& other)
 Logger::Stream::~Stream() {
     if (code == nullptr) return;
 
-    logger.log(code, announcer, logged_data.str().c_str());
+    logger.log((int) log_level, code, announcer, logged_data.str().c_str());
 }
 
 

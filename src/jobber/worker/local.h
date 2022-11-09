@@ -41,14 +41,19 @@ private:
         while (is_online) {
             StateT awaited_state = StateT::task_ready;
             while (is_online && !state_.compare_exchange_strong(awaited_state, StateT::executing_task)) {
-                logger.stream("strm", name_.c_str()) << "waiting for task";
+                logger.debug(name_.c_str(), "waiting for task");
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 awaited_state = StateT::task_ready;
             }
 
-            logger.stream("strm", name_.c_str()) << "task exec";
+            logger.debug(name_.c_str(), "task exec");
             current_result_ = current_task_.run();
-            logger.stream("strm", name_.c_str()) << "task done | result = " << current_result_;
+
+            if constexpr (true) {
+                logger.stream(Logger::Level::debug, "strm", name_.c_str()) << "task done | result = " << current_result_;
+            } else {
+                logger.debug(name_.c_str(), "task done");
+            }
 
             state_.store(StateT::result_ready);
         }

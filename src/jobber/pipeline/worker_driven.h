@@ -104,7 +104,7 @@ private:
     }
 
     asio::awaitable<void> worker_routine(WorkerT &worker) {
-        logger << "++++++++++++++++++++++++ worker routine started";
+        logger.stream(Logger::Level::trace) << "worker routine started";
 
         while (is_online()) {
             await_in_progress++;
@@ -114,7 +114,7 @@ private:
                 await_in_progress--;
                 co_await small_sleep();
             } else {
-                logger << "found task";
+                logger.stream(Logger::Level::trace) << "found task";
 
                 worker.set_task(std::move(task));
 
@@ -128,7 +128,7 @@ private:
             }            
         }
 
-        logger << "worker routine finished";
+        logger.stream(Logger::Level::trace) << "worker routine finished";
     }
 
 private:
@@ -155,7 +155,7 @@ public:
 
     void add_worker(WorkerT &worker) {
         asio::co_spawn(io_, [this, &worker]() -> asio::awaitable<void> {
-            logger << "spawned worker";
+            logger.stream(Logger::Level::debug) << "spawned worker";
             co_await worker_routine(worker);
 
             co_return;
@@ -171,11 +171,11 @@ public:
         status_.tasks_available_ = true;
 
         while (has_to_await()) {
-            logger << "tasks: " << storage_.size() << ", await_in_progress: " << await_in_progress;
+            logger.stream(Logger::Level::trace) << "tasks: " << storage_.size() << ", await_in_progress: " << await_in_progress;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
-        logger << "finished awaiting";
+        logger.stream(Logger::Level::debug) << "finished awaiting";
 
         return TaskT::reduce(std::move(results_));
     }

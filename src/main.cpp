@@ -1,5 +1,7 @@
 #include <jobber/jobber.h>
 #include <utils/logger.h>
+#include <utils/timer.h>
+#include <argparse.h>
 
 #include "sample_task.h"
 
@@ -7,15 +9,53 @@
 using namespace jobber;
 using TaskT = TestApp::TaskT;
 
-#include <asio.hpp>
-#include <iostream>
 
+int main(int argc, char* argv[]) {
+    // srand(time(nullptr));
 
-int main() {
-    logger.set_verb_level(Logger::Level::none);
+    argparse::ArgumentParser program("jobber", "0.1");
+
+    program.add_argument("-w", "--workers")
+        .help("workers count")
+        .default_value(4)
+        .scan<'i', int>();
+    
+    program.add_argument("-c", "--complexity")
+        .help("complexity cap for splitted tasks")
+        .default_value(100)
+        .scan<'i', int>();
+    
+    program.add_argument("-t", "--task_count")
+        .help("forces complexity to be calculated n / task_count")
+        .default_value(-1)
+        .scan<'i', int>();
+    
+    program.add_argument("-s", "--task_size")
+        .help("task_size")
+        .default_value(1000)
+        .scan<'i', int>();
+    
+    program.add_argument("-n", "--n")
+        .help("n")
+        .default_value(1000000)
+        .scan<'i', int>();
+    
+    program.parse_args(argc, argv);
+
+    size_t n = program.get<int>("--n");
+    size_t workers_cnt = program.get<int>("--workers");
+    size_t complexity_cap = program.get<int>("--complexity");
+    size_t task_size = program.get<int>("--task_size");
+
+    int task_count = program.get<int>("--task_count");
+    if (task_count > 0) {
+        complexity_cap = n / task_count;
+    }
+
+    logger.set_verb_level(Logger::Level::info);
 
     storage::ComplexityCappedT<TaskT, splitter::LinearGreedy<TaskT>> capped_storage(
-        splitter::LinearGreedy<TaskT>(1000)
+        splitter::LinearGreedy<TaskT>{complexity_cap}
     );
 
     pipeline::WorkerDrivenT<
@@ -25,22 +65,29 @@ int main() {
         std::move(capped_storage)
     );
 
-    std::vector<jobber::worker::LocalT<TaskT>> workers(4);
+    std::vector<jobber::worker::LocalT<TaskT>> workers(workers_cnt);
     for (auto& worker : workers) {
         pipeline.add_worker(worker);
     }
 
-    std::vector<int> task_vector(100000000, 1);
+    std::vector<int> task_vector(n, task_size);
+    for (int i = 0; i < n; ++i) {
+        task_vector[i] = i % task_size;
+    }
     TaskT task(std::move(task_vector));
 
     pipeline.put(std::move(task));
 
     logger << "awaiting";
-    auto result = pipeline.await();
 
-    logger.set_verb_level(Logger::Level::debug);
+    kctf::Timer timer;
+    auto result = pipeline.await();
+    timer.stop();
 
     logger << "result = " << result;
+    logger.n();
+    logger << "workers: " << workers_cnt << ", complexity: " << complexity_cap << ", task_size: " << task_size;
+    logger << "time   = " << (double) timer.elapsed() / 1000 << "s";
 
     pipeline.stop();
 

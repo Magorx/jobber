@@ -26,10 +26,20 @@ public:
 
 public:
     ResultT run() {
-        int sum = 0;
-        for (const auto &i : data) {
-            sum += i + compute_context.add_to_everything;
+        if (data.size() == 0) {
+            return 0;
         }
+
+        int sum = 0;
+    
+        for (auto& i : data) {
+            int x = 0;
+            for (int j = 0; j < i; ++j) {
+                sum += x;
+                x += 2;
+            }
+        }
+
         return sum;
     }
 

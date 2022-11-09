@@ -16,6 +16,23 @@
 
 
 class Logger {
+public:
+    enum class Level {
+        none = 0,
+        error = 2,
+        warning = 4,
+        info = 6,
+        debug = 10,
+        trace = 20
+    };
+
+    enum class Align {
+        left = -1,
+        middle = 0,
+        right = 1
+    };
+
+private:
     FILE *fileptr;
     bool to_close_file;
 
@@ -60,12 +77,13 @@ private:
 
     class Stream {
         Logger &logger;
+        Level log_level;
         const char *code;
         const char *announcer;
         std::stringstream logged_data;
 
     public:
-        Stream(Logger &logger, const char *code, const char *announcer);
+        Stream(Logger &logger, const char *code, const char *announcer, Level log_level=Level::info);
         Stream(Stream&);
         Stream(Stream&&);
         ~Stream();
@@ -82,20 +100,6 @@ private:
 
 public:
     int paging_mode;
-
-    enum class Level {
-        none = 0,
-        error = 2,
-        warning = 4,
-        info = 6,
-        debug = 10,
-    };
-
-    enum class Align {
-        left = -1,
-        middle = 0,
-        right = 1
-    };
 
     Logger(const std::string &filename="", int log_level=5, int reset_max_lens_counter=50);
     Logger(FILE *fileptr, int log_level=5, int reset_max_lens_counter=50);
@@ -126,6 +130,10 @@ public:
     void warning (const char* announcer, const char *message, ...);
     void doubt   (const char* announcer, const char *message, ...);
 
+    void debug   (const char* announcer, const char *message, ...);
+    void trace   (const char* announcer, const char *message, ...);
+
+    Stream stream(Level log_level, const char* code="strm", const char* announcer="logger");
     Stream stream(const char* code="strm", const char* announcer="logger");
 
     template<typename T>
