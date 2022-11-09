@@ -84,6 +84,7 @@
         "codecvt": "cpp",
         "csignal": "cpp",
         "coroutine": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "iostream": "cpp"
     }
 }

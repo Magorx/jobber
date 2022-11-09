@@ -7,43 +7,42 @@
 using namespace jobber;
 using TaskT = TestApp::TaskT;
 
+#include <asio.hpp>
+#include <iostream>
+
 
 int main() {
+    logger.set_verb_level(Logger::Level::none);
+
     storage::ComplexityCappedT<TaskT, splitter::LinearGreedy<TaskT>> capped_storage(
-        splitter::LinearGreedy<TaskT>(3)
+        splitter::LinearGreedy<TaskT>(1000)
     );
 
-    pipeline::ThreadLocalT<
+    pipeline::WorkerDrivenT<
         TaskT, 
         storage::ComplexityCappedT<TaskT, splitter::LinearGreedy<TaskT>>
     > pipeline(
         std::move(capped_storage)
     );
 
-    // PipelineT<TaskT> pipeline(
-    //     PipelineConfigT()
-    //         .ip("0.0.0.0")
-    //         .port(100010)
-    //         .max_complexity(3)
-    // );
+    std::vector<jobber::worker::LocalT<TaskT>> workers(4);
+    for (auto& worker : workers) {
+        pipeline.add_worker(worker);
+    }
 
-    TaskT task({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    std::vector<int> task_vector(100000000, 1);
+    TaskT task(std::move(task_vector));
 
     pipeline.put(std::move(task));
+
+    logger << "awaiting";
     auto result = pipeline.await();
+
+    logger.set_verb_level(Logger::Level::debug);
 
     logger << "result = " << result;
 
-    // logger << "initial task complexity [" << task.complexity() << ']';
-    // capped_storage.put({task});
-
-    // auto tasks = capped_storage.take(capped_storage.size());
-
-    // logger << "tasks in storage (" << tasks.size() << ")\n";
-
-    // for (const auto &task : tasks) {
-    //     logger << "complexity [" << task.complexity() << ']';
-    // }
+    pipeline.stop();
 
     return 0;
 }

@@ -10,6 +10,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(WARNING_FLAGS "-Wall -Wextra -Wno-multichar -Wno-unused-result")
 
 set(CMAKE_EXE_LINKER_FLAGS "-pthread")
-set(CMAKE_CXX_FLAGS   "-O3 ${WARNING_FLAGS} -fdeclspec")
+set(CMAKE_CXX_FLAGS   "-O3 ${WARNING_FLAGS} -fdeclspec -fsanitize=address")
 
 add_subdirectory(src)

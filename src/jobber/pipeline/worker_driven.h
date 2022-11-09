@@ -27,12 +27,18 @@ private:
 
 private:
     struct StatusT {
-        bool is_online_;
+        std::atomic<bool> is_online_;
+        std::atomic<bool> stopped_externaly_;
+        std::atomic<bool> tasks_available_;
     };
     
 
 private:
-    StatusT status_;
+    StatusT status_ = {
+        true,
+        false,
+        true
+    };
 
     StorageT storage_;
     std::mutex storage_mutex_;
@@ -40,22 +46,56 @@ private:
     std::vector<ResultT> results_;
     std::mutex results_mutex_;
 
+    std::atomic<int> await_in_progress = 0;
+
     asio::io_context io_;
+    std::thread io_runner_;
 
 private:
-    GivenTaskT get_task() {
-        std::lock_guard lock(storage_mutex_);
+    bool is_online() {
+        return status_.is_online_;
+    }
 
-        while (is_online()) {
+    bool set_online(bool is_online) {
+        status_.is_online_ = is_online;
+        return is_online;
+    }
+
+    bool has_to_await() {
+        return !status_.stopped_externaly_ && (
+            false
+            || await_in_progress
+            || status_.tasks_available_
+            || storage_.size() > 0
+        );
+    }
+
+private:
+    asio::awaitable<void> small_sleep() {
+        asio::steady_timer timer(io_, std::chrono::milliseconds(1));
+        co_await timer.async_wait(asio::use_awaitable);
+        co_return;
+    }
+
+private:
+    asio::awaitable<GivenTaskT> get_task() {
+        while (status_.tasks_available_) {
+            storage_mutex_.lock();
+
             if (storage_.size() > 0) {
                 auto tasks = storage_.take(1);
-                return std::move(tasks[0]);
+                storage_mutex_.unlock();
+                co_return std::move(tasks[0]);
+            } else {
+                status_.tasks_available_ = false;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            storage_mutex_.unlock();
+
+            co_await small_sleep();
         }
 
-        return TaskT::empty();
+        co_return TaskT::empty();
     }
 
     void push_result(ResultT &&result) {
@@ -63,46 +103,90 @@ private:
         results_.push_back(std::move(result));
     }
 
-    bool is_online() {
-        return status_.is_online_;
+    asio::awaitable<void> worker_routine(WorkerT &worker) {
+        logger << "++++++++++++++++++++++++ worker routine started";
+
+        while (is_online()) {
+            await_in_progress++;
+
+            auto task = co_await get_task();
+            if (task.is_empty()) {
+                await_in_progress--;
+                co_await small_sleep();
+            } else {
+                logger << "found task";
+
+                worker.set_task(std::move(task));
+
+                while (worker.is_busy()) {
+                    co_await small_sleep();
+                }
+
+                push_result(std::move(worker.get_result()));
+
+                await_in_progress--;
+            }            
+        }
+
+        logger << "worker routine finished";
     }
 
-    void worker_routine(WorkerT &worker) {
-        while (is_online()) {
-            auto task = get_task();
-            if (task.is_empty()) {
-                break;
-            }
+private:
+    void run_io() {
+        asio::executor_work_guard<asio::io_context::executor_type> work_guard(io_.get_executor());
 
-            auto result = task.run();
-            push_result(std::move(result));
-        }
+        io_.run();
+    }
+
+    void io_runner_routine() {
     }
 
 public:
     WorkerDrivenT(StorageT storage)
         : storage_(std::move(storage))
+        , io_runner_(&WorkerDrivenT::run_io, this)
     {}
 
+    ~WorkerDrivenT() {
+        set_online(false);
+        io_.stop();
+        io_runner_.join();
+    }
+
+    void add_worker(WorkerT &worker) {
+        asio::co_spawn(io_, [this, &worker]() -> asio::awaitable<void> {
+            logger << "spawned worker";
+            co_await worker_routine(worker);
+
+            co_return;
+        }, asio::detached);
+    }
+
     void put(TaskT &&task) {
+        std::lock_guard lock(storage_mutex_);
         storage_.put(std::move(std::vector{task}));
     }
 
-    void add_worker(WorkerT &&worker) {
-        // asio::post(io_, [this, &worker]() {
-        //     worker_routine(worker);
-        // });
-    }
-
     ResultT await() {
-        auto tasks = storage_.take(storage_.size());
-        std::vector<ResultT> results;
+        status_.tasks_available_ = true;
 
-        for (auto &&task : tasks) {
-            results.push_back(task.run());
+        while (has_to_await()) {
+            logger << "tasks: " << storage_.size() << ", await_in_progress: " << await_in_progress;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
+        logger << "finished awaiting";
+
         return TaskT::reduce(std::move(results_));
+    }
+
+public:
+    void stop() {
+        status_.stopped_externaly_ = true;
+    }
+
+    void restart() {
+        status_.stopped_externaly_ = false;
     }
 };
 

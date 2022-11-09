@@ -27,7 +27,7 @@ concept TaskConcept = requires(
     { task.update_compute_context(compute_context_update) };
 
     { TaskT::empty()                    } -> std::convertible_to<TaskT>;
-    { TaskT::is_empty(task)             } -> std::convertible_to<bool>;
+    { task.is_empty()                   } -> std::convertible_to<bool>;
 };
 
 } // namespace jobber

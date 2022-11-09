@@ -1,5 +1,9 @@
 #include "logger.h"
 
+
+#define MAKE_THREAD_SAFE std::lock_guard<std::mutex> lock(global_mutex_);
+
+
 namespace kctf {
     Logger logger;
 }
@@ -213,6 +217,8 @@ void Logger::print_log_prefix(
 
 void Logger::_log(bool to_ignore_log_level, const char* code, const char* announcer, const char *message, va_list arglist) { // dirty code, I suppose it can be cleaned
     if (log_level > verb_level && !to_ignore_log_level) return;
+
+    MAKE_THREAD_SAFE
 
     if (!announcer || !code || !message) {
         print_nullptr_passed_error();

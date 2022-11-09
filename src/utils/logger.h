@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdarg>
 
+#include <mutex>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -41,6 +42,10 @@ class Logger {
     int page_cnt;
 
     bool htlm_mode = false;
+
+    std::mutex global_mutex_;
+
+private:
 
     void update_announcer(const char* announcer);
     void update_code(const char *code);
