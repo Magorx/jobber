@@ -1,21 +1,21 @@
 #pragma once
 
 
-#include <string.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstdarg>
-
+#include <iostream>
 #include <mutex>
 #include <string>
 #include <sstream>
 #include <vector>
 
 
-#define LOOG(format, ...) printf(format "\n", ##__VA_ARGS__);
+namespace kctf {
 
+class LoggerT {
+private:
+    using OutputStreamT = std::ostream;
+    using StringT = std::string;
+    using CodeT = StringT;
 
-class Logger {
 public:
     enum class Level {
         none = 0,
@@ -32,162 +32,152 @@ public:
         right = 1
     };
 
-private:
-    FILE *fileptr;
-    bool to_close_file;
+    struct ParenthesisT {
+        StringT left_;
+        StringT right_;
 
-    char  *last_announcer;
-    size_t last_announcer_len;
-
-    char  *last_code;
-    size_t last_code_len;
-
-    size_t max_code_len;
-    size_t max_announcer_len;
-
-    bool to_print_announcer;
-    bool to_print_code;
-
-    int offset;
-
-    int reset_max_lens_counter;
-    int tick_timer;
-
-    int log_level;
-    int verb_level;
-
-    int page_cnt;
-
-    bool htlm_mode = false;
-
-    std::mutex global_mutex_;
-
-private:
-
-    void update_announcer(const char* announcer);
-    void update_code(const char *code);
-
-    void reset_lasts();
-
-    void print_nullptr_passed_error() const;
-
-    void tick();
-
-    void _log(bool to_ignore_log_level, const char* code, const char* announcer, const char *message, va_list arglist);
-
-    class Stream {
-        Logger &logger;
-        Level log_level;
-        const char *code;
-        const char *announcer;
-        std::stringstream logged_data;
-
-    public:
-        Stream(Logger &logger, const char *code, const char *announcer, Level log_level=Level::info);
-        Stream(Stream&);
-        Stream(Stream&&);
-        ~Stream();
-
-        Stream &operator=(const Stream&) = delete;
-        Stream &operator=(Stream&&) = delete;
-
-        template<typename T>
-        Stream &operator<<(const T &value) {
-            logged_data << value;
-            return *this;
+        bool operator!=(const ParenthesisT &other) const {
+            return left_ != other.left_ || right_ != other.right_;
         }
     };
 
+    class LoggerStreamT {
+    private:
+        class ProxyT {
+        private:
+            LoggerStreamT &logger_stream_;
+            std::stringstream ss_;
+
+            std::vector<CodeT> additional_codes_;
+
+        public:
+            ProxyT(LoggerStreamT &logger_stream, const std::vector<CodeT> &additional_codes = {});
+            ~ProxyT();
+
+            ProxyT(ProxyT &);
+            ProxyT(ProxyT &&);
+
+            template <typename T>
+            ProxyT &operator<<(const T &value) {
+                ss_ << value;
+                return *this;
+            }
+        };
+
+        class AdditionalCodeProxyT {
+        private:
+            LoggerStreamT &logger_stream_;
+            std::vector<CodeT> additional_codes_;
+
+        public:
+            AdditionalCodeProxyT(LoggerStreamT &logger_stream, const std::vector<CodeT> &additional_codes);
+            AdditionalCodeProxyT operator()(const CodeT &code);
+
+            template <typename T>
+            ProxyT operator<<(const T &value) {
+                ProxyT proxy(logger_stream_, additional_codes_);
+                proxy << value;
+                return proxy;
+            }
+        };
+
+    private:
+        LoggerT &logger_;
+        Level log_level_;
+        std::vector<CodeT> codes_;
+        std::vector<ParenthesisT> parentheses_;
+        StringT split_;
+        StringT end_;
+        bool to_ignore_prefix_;
+        bool to_print_codes_anyway_;
+
+    public:
+        LoggerStreamT(LoggerT &logger,
+                      Level log_level,
+                      const std::vector<CodeT> &codes,
+                      const std::vector<ParenthesisT> &parentheses=LoggerT::default_parentheses_,
+                      const StringT &split=" : ",
+                      const StringT &end="\n",
+                      bool to_ignore_prefix=false,
+                      bool to_print_codes_anyway=true);
+
+        AdditionalCodeProxyT operator()(const CodeT &additional_code);
+
+        template <typename T>
+        ProxyT operator<<(const T &value) {
+            ProxyT proxy(*this);
+            proxy << value;
+            return proxy;
+        }
+
+        void flush();
+        void n();
+
+        StringT get_split() const;
+        StringT get_end() const;
+        bool get_to_ignore_prefix() const;
+
+        void set_parentheses(const std::vector<ParenthesisT> &parentheses);
+        void set_split(const StringT &split);
+        void set_end(const StringT &end);
+        void set_to_ignore_prefix(bool to_ignore_prefix);
+    };
+
+private:
+    std::mutex mutex_;
+    
+    OutputStreamT &stream_;
+    Level log_level_;
+
 public:
-    int paging_mode;
+    const static std::vector<ParenthesisT> default_parentheses_;
 
-    Logger(const std::string &filename="", int log_level=5, int reset_max_lens_counter=50);
-    Logger(FILE *fileptr, int log_level=5, int reset_max_lens_counter=50);
+private:
+    struct CodeEntryT {
+        CodeT code_;
+        size_t max_code_length_;
 
-    ~Logger();
+        ParenthesisT parentheses_;
+        size_t max_par_length_left;
+        size_t max_par_length_right;
+    };
 
-    Logger(const Logger &other) = delete;
-    Logger &operator=(const Logger &other) = delete;
+    std::vector<CodeEntryT> used_codes_;
 
-    void print(const char *message, ...);
+private:
+    bool used_code_fully_mathches(const std::vector<CodeT> &codes, const std::vector<ParenthesisT> &parenthesis) const;
+    void print_code(size_t code_index, const CodeT &code, const ParenthesisT &parentheses, bool to_print_parentheses_anyway=false, bool to_print_codes_anyway=false);
+    void print_aligned(const StringT &str, Align align, size_t width);
 
-    void print_log_prefix(
-        const char* code,
-        const char* announcer,
-        bool to_tick=true,
-        bool force_code=false,
-        bool force_announcer=false
+public:
+    void print(
+        Level level,
+        const std::vector<CodeT> &codes,
+        const StringT &message,
+        const StringT &split=" : ",
+        const StringT &end="\n",
+        bool to_ignore_prefix=false,
+        const std::vector<ParenthesisT> &parentheses=default_parentheses_,
+        bool to_print_codes_anyway=true
     );
 
-    void log(const char* code, const char* announcer, const char *message, ...); // normal logging
-    void log(int override_log_level, const char* code, const char* announcer, const char *message, ...);
-    void logv(int override_log_level, const char* code, const char* announcer, const char *message, va_list args);
-    void logr(const char* code, const char* announcer, const char *message, ...); // reset maxlens and lasts
+    void set_log_level(Level level);
+
+    void flush();
+
+    LoggerStreamT error;
+    LoggerStreamT warning;
+    LoggerStreamT info;
+    LoggerStreamT debug;
+    LoggerStreamT trace;
     
-    void error   (const char* announcer, const char *message, ...);
-    void ERROR   (const char* announcer, const char *message, ...);
-    void info    (const char* announcer, const char *message, ...);
-    void warning (const char* announcer, const char *message, ...);
-    void doubt   (const char* announcer, const char *message, ...);
-
-    void debug   (const char* announcer, const char *message, ...);
-    void trace   (const char* announcer, const char *message, ...);
-
-    Stream stream(Level log_level, const char* code="strm", const char* announcer="logger");
-    Stream stream(const char* code="strm", const char* announcer="logger");
-
-    template<typename T>
-    Stream operator<<(const T &value) {
-        Stream new_stream(*this, "strm", "logger");
-        new_stream << value;
-        return new_stream;
-    }
-
-    void print_n_spaces(int n);
-    void n();
-    void print_aligned(Align align, int size, const char *format, ...);
-    void page_cut(const char *page_name=nullptr, Level log_level_=Level::info, int page_len = 80, char symb = '=');
-
-    inline void resets() {
-        reset_lasts();
-        reset_max_lens();
-        tick_timer = 0;
-    }
-
-    int  get_log_level() const;
-    void set_log_level(int log_level_);
-    void set_log_level(Logger::Level log_level_);
-
-    int  get_verb_level() const;
-    void set_verb_level(int verb_level_);
-    void set_verb_level(Logger::Level verb_level_);
-
-    void reset_max_lens();
-
-    void set_offset(int new_offset);
-    void shift_offset(int shift);
-
-    void tag_close(int tag_cnt=1);
-
-    void set_html_mode(bool new_html_mode) {
-        htlm_mode = new_html_mode;
-    }
-
-    inline FILE *get_log_file() { return fileptr; }
-};
-
-namespace kctf {
-    extern Logger logger;
-}
-
-class LogLevel {
-    Logger &logger;
-    int prev_log_level;
-    int prev_verb_level;
 
 public:
-    LogLevel(Logger &logger, int log_level = -1, int verb_level = -1);
-    ~LogLevel();
+    LoggerT(OutputStreamT &stream, Level log_level=Level::info);
 };
+
+extern LoggerT logger;
+
+} // namespace kctf
 
 using kctf::logger;

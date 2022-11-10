@@ -5,6 +5,8 @@
 
 #include <jobber/worker/worker.h>
 
+#include <utils/progress_bar.h>
+
 #include <asio.hpp>
 
 #include <vector>
@@ -104,7 +106,7 @@ private:
     }
 
     asio::awaitable<void> worker_routine(WorkerT &worker) {
-        logger.stream(Logger::Level::trace) << "worker routine started";
+        logger.trace << "worker routine started";
 
         while (is_online()) {
             await_in_progress++;
@@ -114,7 +116,7 @@ private:
                 await_in_progress--;
                 co_await small_sleep();
             } else {
-                logger.stream(Logger::Level::trace) << "found task";
+                logger.trace << "found task";
 
                 worker.set_task(std::move(task));
 
@@ -128,7 +130,7 @@ private:
             }            
         }
 
-        logger.stream(Logger::Level::trace) << "worker routine finished";
+        logger.trace << "worker routine finished";
     }
 
 private:
@@ -155,7 +157,7 @@ public:
 
     void add_worker(WorkerT &worker) {
         asio::co_spawn(io_, [this, &worker]() -> asio::awaitable<void> {
-            logger.stream(Logger::Level::debug) << "spawned worker";
+            logger.debug << "spawned worker";
             co_await worker_routine(worker);
 
             co_return;
@@ -170,12 +172,18 @@ public:
     ResultT await() {
         status_.tasks_available_ = true;
 
+        kctf::ProgressBar progress_bar(100, "Awaiting results");
+
+        size_t tasks_to_complete = storage_.size();
+
         while (has_to_await()) {
-            logger.stream(Logger::Level::trace) << "tasks: " << storage_.size() << ", await_in_progress: " << await_in_progress;
+            logger.trace << "tasks: " << storage_.size() << ", await_in_progress: " << await_in_progress;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+            progress_bar.update((double) (tasks_to_complete - storage_.size()) / tasks_to_complete);
         }
 
-        logger.stream(Logger::Level::debug) << "finished awaiting";
+        logger.debug << "finished awaiting";
 
         return TaskT::reduce(std::move(results_));
     }

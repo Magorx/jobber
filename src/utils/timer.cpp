@@ -2,7 +2,7 @@
 
 namespace kctf {
 
-Timer::Timer(const IdType &id, bool not_to_start, Logger &logger):
+Timer::Timer(const IdType &id, bool not_to_start, LoggerT &logger):
 is_stopped(false),
 logger_(logger),
 cur_elapsed(0),
@@ -38,19 +38,11 @@ void Timer::stop() {
     cur_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop_timestamp - start_timestamp).count();
 }
 
-void Timer::print(const char *format) {
-    if (!format) {
-        if (id.size()) {
-            format = "timer<%s>, %ldms";
-        } else {
-            format = "timer, %ldms";
-        }
-    }
-
+void Timer::print() {
     if (id.size()) {
-        logger_.log("time", "timer", format, id.data(), cur_elapsed);
+        logger_.info("timer")(id) << " " << (double) elapsed() / 1000 << "s";
     } else {
-        logger_.log("time", "timer", format, elapsed());
+        logger_.info("timer") << (double) elapsed() / 1000 << "s";
     }
 }
 
