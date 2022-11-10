@@ -81,7 +81,8 @@ int main(int argc, char* argv[]) {
     logger.info << "result = " << result;
     logger.info.n();
     logger.info << "workers: " << workers_cnt << ", complexity: " << complexity_cap << ", task_size: " << task_size;
-    logger.info << "time = " << (double) timer.elapsed() / 1000 << "s";
+    // logger.info << "time = " << (double) timer.elapsed() / 1000 << "s";
+    timer.print();
 
     pipeline.stop();
 

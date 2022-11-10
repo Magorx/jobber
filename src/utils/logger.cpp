@@ -159,7 +159,19 @@ LoggerT::LoggerT(OutputStreamT &stream, Level log_level)
     , info(*this, Level::info, {"info"})
     , debug(*this, Level::debug, {"debg"})
     , trace(*this, Level::trace, {"trce"})
-{}
+
+    , nc_error(*this, Level::error, {"!!!!"})
+    , nc_warning(*this, Level::warning, {"~~~~"})
+    , nc_info(*this, Level::info, {"info"})
+    , nc_debug(*this, Level::debug, {"debg"})
+    , nc_trace(*this, Level::trace, {"trce"})
+{
+    nc_error.to_replace_codes_ = true;
+    nc_warning.to_replace_codes_ = true;
+    nc_info.to_replace_codes_ = true;
+    nc_debug.to_replace_codes_ = true;
+    nc_trace.to_replace_codes_ = true;
+}
 
 LoggerT::LoggerStreamT::LoggerStreamT(
     LoggerT &logger,
@@ -202,8 +214,14 @@ LoggerT::LoggerStreamT::ProxyT::ProxyT(LoggerStreamT &logger_stream, const std::
 {}
 
 LoggerT::LoggerStreamT::ProxyT::~ProxyT() {
-    auto codes = logger_stream_.codes_;
-    codes.insert(codes.end(), additional_codes_.begin(), additional_codes_.end());
+    std::vector<CodeT> codes;
+    
+    if (logger_stream_.to_replace_codes_) {
+        codes = std::move(additional_codes_);
+    } else {
+        codes = logger_stream_.codes_;
+        codes.insert(codes.end(), additional_codes_.begin(), additional_codes_.end());
+    }
 
     logger_stream_.logger_.print(
         logger_stream_.log_level_,

@@ -30,7 +30,7 @@ class ProgressBar {
     void turn_wheele() const;
 
 public:
-    ProgressBar(int capacity_=100, std::string id="", LoggerT::LoggerStreamT &stream=kctf::logger.info);
+    ProgressBar(int capacity_=100, std::string id="", LoggerT::LoggerStreamT &stream=kctf::logger.nc_info);
 
     bool start(int new_capacity=-1);
 

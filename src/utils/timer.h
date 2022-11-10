@@ -13,7 +13,7 @@ class Timer {
     std::chrono::time_point<std::chrono::system_clock> stop_timestamp;
     bool is_stopped;
 
-    LoggerT &logger_;
+    LoggerT::LoggerStreamT &stream_;
 
     uint64_t cur_elapsed;
 
@@ -21,7 +21,7 @@ public:
     using IdType = std::string;
     const IdType id;
 
-    Timer(const IdType &id = "", bool not_to_start = false, LoggerT &logger=kctf::logger);
+    Timer(const IdType &id = "", bool not_to_start = false, LoggerT::LoggerStreamT &stream=kctf::logger.nc_info);
 
     void start();
     void restart();

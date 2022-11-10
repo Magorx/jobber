@@ -2,9 +2,9 @@
 
 namespace kctf {
 
-Timer::Timer(const IdType &id, bool not_to_start, LoggerT &logger):
+Timer::Timer(const IdType &id, bool not_to_start, LoggerT::LoggerStreamT &stream):
 is_stopped(false),
-logger_(logger),
+stream_(stream),
 cur_elapsed(0),
 id(id)
 {
@@ -40,9 +40,9 @@ void Timer::stop() {
 
 void Timer::print() {
     if (id.size()) {
-        logger_.info("timer")(id) << " " << (double) elapsed() / 1000 << "s";
+        stream_("time")(id) << " " << (double) elapsed() / 1000 << "s";
     } else {
-        logger_.info("timer") << (double) elapsed() / 1000 << "s";
+        stream_("time") << (double) elapsed() / 1000 << "s";
     }
 }
 

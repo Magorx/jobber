@@ -92,6 +92,9 @@ public:
         bool to_print_codes_anyway_;
 
     public:
+        bool to_replace_codes_ = false;
+
+    public:
         LoggerStreamT(LoggerT &logger,
                       Level log_level,
                       const std::vector<CodeT> &codes,
@@ -170,6 +173,12 @@ public:
     LoggerStreamT info;
     LoggerStreamT debug;
     LoggerStreamT trace;
+
+    LoggerStreamT nc_error;
+    LoggerStreamT nc_warning;
+    LoggerStreamT nc_info;
+    LoggerStreamT nc_debug;
+    LoggerStreamT nc_trace;
     
 
 public:
