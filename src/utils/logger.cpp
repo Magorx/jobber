@@ -409,7 +409,6 @@ void Logger::shift_offset(int shift) {
     set_offset(offset + shift);
 }
 
-
 Logger::Stream::Stream(Logger &logger, const char *code, const char *announcer, Level log_level)
     : logger(logger)
     , log_level(log_level)
