@@ -124,6 +124,8 @@ public:
         void set_split(const StringT &split);
         void set_end(const StringT &end);
         void set_to_ignore_prefix(bool to_ignore_prefix);
+
+        bool is_tty() const;
     };
 
 private:
@@ -131,6 +133,8 @@ private:
     
     OutputStreamT &stream_;
     Level log_level_;
+
+    bool is_tty_ = true;
 
 public:
     const static std::vector<ParenthesisT> default_parentheses_;
@@ -179,10 +183,14 @@ public:
     LoggerStreamT nc_info;
     LoggerStreamT nc_debug;
     LoggerStreamT nc_trace;
-    
 
 public:
-    LoggerT(OutputStreamT &stream, Level log_level=Level::info);
+    LoggerT(Level log_level=Level::info, OutputStreamT &stream=std::cout, bool is_tty=true);
+
+    bool is_tty() const;
+    void set_tty(bool is_tty);
+
+    OutputStreamT &get_stream();
 };
 
 extern LoggerT logger;

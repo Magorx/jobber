@@ -13,6 +13,8 @@ class ProgressBar {
     int cur_step;
     bool stopped_;
 
+    int non_tty_progress_counter = 0;
+
     std::chrono::time_point<std::chrono::system_clock> start_timestamp;
     
     LoggerT::LoggerStreamT &stream_;

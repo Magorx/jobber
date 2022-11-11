@@ -120,7 +120,7 @@ void LoggerT::print(
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (to_ignore_prefix) {
-        stream_ << message;
+        stream_ << message << end;
         return;
     }
 
@@ -148,29 +148,6 @@ void LoggerT::set_log_level(Level level) {
 
 void LoggerT::flush() {
     stream_.flush();
-}
-
-LoggerT::LoggerT(OutputStreamT &stream, Level log_level)
-    : stream_(stream)
-    , log_level_(log_level)
-
-    , error(*this, Level::error, {"!!!!"})
-    , warning(*this, Level::warning, {"~~~~"})
-    , info(*this, Level::info, {"info"})
-    , debug(*this, Level::debug, {"debg"})
-    , trace(*this, Level::trace, {"trce"})
-
-    , nc_error(*this, Level::error, {"!!!!"})
-    , nc_warning(*this, Level::warning, {"~~~~"})
-    , nc_info(*this, Level::info, {"info"})
-    , nc_debug(*this, Level::debug, {"debg"})
-    , nc_trace(*this, Level::trace, {"trce"})
-{
-    nc_error.to_replace_codes_ = true;
-    nc_warning.to_replace_codes_ = true;
-    nc_info.to_replace_codes_ = true;
-    nc_debug.to_replace_codes_ = true;
-    nc_trace.to_replace_codes_ = true;
 }
 
 LoggerT::LoggerStreamT::LoggerStreamT(
@@ -262,6 +239,46 @@ void LoggerT::LoggerStreamT::n() {
     );
 }
 
+bool LoggerT::LoggerStreamT::is_tty() const {
+    return logger_.is_tty();
+}
+
+LoggerT::LoggerT(Level log_level, OutputStreamT &stream, bool is_tty)
+    : stream_(stream)
+    , log_level_(log_level)
+    , is_tty_(is_tty)
+
+    , error(*this, Level::error, {"!!!!"})
+    , warning(*this, Level::warning, {"~~~~"})
+    , info(*this, Level::info, {"info"})
+    , debug(*this, Level::debug, {"debg"})
+    , trace(*this, Level::trace, {"trce"})
+
+    , nc_error(*this, Level::error, {"!!!!"})
+    , nc_warning(*this, Level::warning, {"~~~~"})
+    , nc_info(*this, Level::info, {"info"})
+    , nc_debug(*this, Level::debug, {"debg"})
+    , nc_trace(*this, Level::trace, {"trce"})
+{
+    nc_error.to_replace_codes_   = true;
+    nc_warning.to_replace_codes_ = true;
+    nc_info.to_replace_codes_    = true;
+    nc_debug.to_replace_codes_   = true;
+    nc_trace.to_replace_codes_   = true;
+}
+
+bool LoggerT::is_tty() const {
+    return is_tty_;
+}
+
+void LoggerT::set_tty(bool is_tty) {
+    is_tty_ = is_tty;
+}
+
+LoggerT::OutputStreamT &LoggerT::get_stream() {
+    return stream_;
+}
+
 const std::vector<LoggerT::ParenthesisT> LoggerT::default_parentheses_ {
     {"[", "]"},
     {"<", ">"},
@@ -269,6 +286,6 @@ const std::vector<LoggerT::ParenthesisT> LoggerT::default_parentheses_ {
     {"(", ")"}
 };
 
-LoggerT logger(std::cout);
+LoggerT logger(LoggerT::Level::info, std::cout);
 
 } // namespace kctf

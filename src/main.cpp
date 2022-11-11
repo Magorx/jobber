@@ -74,6 +74,8 @@ int main(int argc, char* argv[]) {
 
     logger.info << "awaiting";
 
+    logger.set_tty(false);
+
     kctf::Timer timer;
     auto result = pipeline.await();
     timer.stop();

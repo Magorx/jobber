@@ -10,9 +10,20 @@ void ProgressBar::print_prefix() {
 
 void ProgressBar::on_start() {
     start_timestamp = std::chrono::system_clock::now();
+    non_tty_progress_counter = 0;
 
-    print_prefix();
-    stream_ << "[>         ] |  0%| " << id_ << " [|]";
+    auto prev_end = stream_.get_end();
+    stream_.set_end("");
+
+    if (!stream_.is_tty()) {
+        stream_ << "[0";
+        stream_.flush();
+    } else {
+        print_prefix();
+        stream_ << "[>         ] |  0%| " << id_ << " [|]";
+    }
+
+    stream_.set_end(prev_end);
 }
 
 void ProgressBar::on_tick() {
@@ -28,30 +39,39 @@ void ProgressBar::on_tick() {
     auto prev_to_ignore_prefix = stream_.get_to_ignore_prefix();
     stream_.set_to_ignore_prefix(true);
 
-    print_prefix();
+    if (!stream_.is_tty()) {
+        int frac = (float) cur_tick / capacity * 10.0;
+        if (frac > non_tty_progress_counter) {
+            stream_ << frac;
+            stream_.flush();
+            non_tty_progress_counter = frac;
+        }
+    } else {
+        print_prefix();
 
-    stream_.set_to_ignore_prefix(prev_to_ignore_prefix);
+        stream_.set_to_ignore_prefix(prev_to_ignore_prefix);
 
-    stream_ << "[";
+        stream_ << "[";
 
-    stream_.set_to_ignore_prefix(true);
+        stream_.set_to_ignore_prefix(true);
 
-    int i = 0;
-    for (; i < 10 && i < ((double) cur_tick / capacity) * 10 - 1; ++i) {
-        stream_ << "=";
+        int i = 0;
+        for (; i < 10 && i < ((double) cur_tick / capacity) * 10 - 1; ++i) {
+            stream_ << "=";
+        }
+        if (i < 10) {
+            ++i;
+            stream_ << ">";
+        }
+        for (; i < 10; ++i) {
+            stream_ << " ";
+        }
+        
+        std::string time_str(30, '\0');
+        sprintf(&time_str[0], "] |% 3d%%| %s [|]", cur_step, id_.c_str());
+
+        stream_ << time_str;
     }
-    if (i < 10) {
-        ++i;
-        stream_ << ">";
-    }
-    for (; i < 10; ++i) {
-        stream_ << " ";
-    }
-    
-    std::string time_str(30, '\0');
-    sprintf(&time_str[0], "] |% 3d%%| %s [|]", cur_step, id_.c_str());
-
-    stream_ << time_str;
 
     stream_.set_end(prev_end);
     stream_.set_to_ignore_prefix(prev_to_ignore_prefix);
@@ -67,17 +87,30 @@ void ProgressBar::on_stop() {
     auto now = std::chrono::system_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_timestamp);
 
-    auto prev_end = stream_.get_end();
-    stream_.set_end("");
+    if (!stream_.is_tty()) {
+        auto prev_ignore_prefix = stream_.get_to_ignore_prefix();
+        stream_.set_to_ignore_prefix(true);
 
-    print_prefix();
+        stream_ << "] |100%| " << id_ << " [+] " << (double) elapsed.count() / 1000 << "s";
 
-    stream_.set_end(prev_end);
+        stream_.set_to_ignore_prefix(prev_ignore_prefix);
+    } else {
+        auto prev_end = stream_.get_end();
+        stream_.set_end("");
 
-    stream_ << "[==========] |100%| " << id_ << " [+] (" << (double) elapsed.count() / 1000 << "s)";
+        print_prefix();
+
+        stream_.set_end(prev_end);
+
+        stream_ << "[==========] |100%| " << id_ << " [+] (" << (double) elapsed.count() / 1000 << "s)";
+    }
 }
 
 void ProgressBar::turn_wheele() const {
+    if (!stream_.is_tty()) {
+        return;
+    }
+
     auto prev_end = stream_.get_end();
     auto prev_to_ignore_prefix = stream_.get_to_ignore_prefix();
     stream_.set_end("");
@@ -102,7 +135,7 @@ ProgressBar::ProgressBar(
     , stream_(stream)
     , id_(id)
 {
-    start_timestamp = std::chrono::system_clock::now();
+    on_start();
 }
 
 bool ProgressBar::start(int new_capacity) {
